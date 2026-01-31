@@ -94,6 +94,12 @@
             margin: 0 auto;
         }
 
+        .nav-center {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
         .logo {
             display: flex;
             align-items: center;
@@ -341,16 +347,26 @@
 
     <nav>
         <div class="nav-content">
-            <div class="nav-actions">
-                <button class="nav-btn" onclick="window.location.href='https://rolimonsbot.onrender.com'"><i
-                        class="fas fa-external-link-alt"></i> Main Dashboard</button>
-                <button class="nav-btn"
-                    onclick="window.location.href='https://rolimonsbot-image-manager.onrender.com'"><i
-                        class="fas fa-home"></i> Local Manager</button>
+            <div class="logo">
+                <img src="https://www.rolimons.com/favicon.ico" alt="Logo">
+                Rolimons Bot
+            </div>
+            <div class="nav-center">
+                <div class="nav-actions">
+                    <button class="nav-btn" onclick="window.location.href='https://rolimonsbot.onrender.com'"><i
+                            class="fas fa-external-link-alt"></i> Main Dashboard</button>
+                    <button class="nav-btn"
+                        onclick="window.location.href='https://rolimonsbot-image-manager.onrender.com'"><i
+                            class="fas fa-home"></i> Local Manager</button>
+                </div>
             </div>
             <div class="status-indicator">
                 <span class="pulse"></span>
                 System Online
+            </div>
+            <div class="nav-actions">
+                <button class="nav-btn" onclick="openSettings()"><i class="fas fa-cog"></i> Settings</button>
+                <button class="nav-btn" onclick="openDatabase()"><i class="fas fa-database"></i> Database</button>
             </div>
         </div>
     </nav>
