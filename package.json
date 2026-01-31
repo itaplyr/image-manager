@@ -1,0 +1,15 @@
+{
+    "type": "module",
+    "engines": {
+        "node": ">=20.0.0"
+    },
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "express": "^5.2.1",
+        "cors": "^2.8.5",
+        "axios": "^1.13.2",
+        "dotenv": "^17.2.3"
+    }
+}
