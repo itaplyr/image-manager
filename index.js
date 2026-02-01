@@ -14,7 +14,31 @@ const PORT = process.env.PORT || 3002;
 app.use(cors());
 app.use(express.json());
 
-const WORKER_URLS = (process.env.WORKER_URLS || 'http://localhost:3001').split(',');
+const WORKERS_FILE = path.join(process.cwd(), 'workers.json');
+
+// Load workers from file or env
+function loadWorkers() {
+    try {
+        if (fs.existsSync(WORKERS_FILE)) {
+            const data = fs.readFileSync(WORKERS_FILE, 'utf8');
+            return JSON.parse(data);
+        }
+    } catch (error) {
+        console.error('Error loading workers file:', error);
+    }
+    return (process.env.WORKER_URLS || 'http://localhost:3001').split(',');
+}
+
+// Save workers to file
+function saveWorkers(workers) {
+    try {
+        fs.writeFileSync(WORKERS_FILE, JSON.stringify(workers, null, 2));
+    } catch (error) {
+        console.error('Error saving workers file:', error);
+    }
+}
+
+let WORKER_URLS = loadWorkers();
 const POLL_INTERVAL = 60 * 1000;
 const IMAGE_DIR = path.join(process.cwd(), 'images');
 const CACHE_DURATION = 10 * 60 * 1000;
@@ -130,7 +154,7 @@ app.get('/health', async (req, res) => {
     const managerRam = Math.round(process.memoryUsage().rss / 1024 / 1024); // MB
     const totalSystemRam = Math.round(os.totalmem() / 1024 / 1024); // MB
     const ramUsage = totalWorkersRam; // Total worker RAM
-    const workersUsage = Math.round((ramUsage / (healthyWorkers * 512)) * 100); // % of system RAM used by workers
+    const workersUsage = totalSystemRam > 0 ? Math.round((ramUsage / totalSystemRam) * 100) : 0; // % of system RAM used by workers
 
     res.json({
         status: 'healthy',
@@ -182,6 +206,21 @@ app.post('/generate/:tradeAdId', async (req, res) => {
     } catch (error) {
         console.error(`[Manager] Error in force generate for ${tradeAdId}:`, error.message);
         res.status(500).json({ error: 'Failed to generate image' });
+    }
+});
+
+app.get('/settings', (req, res) => {
+    res.json({ workers: WORKER_URLS });
+});
+
+app.post('/settings', (req, res) => {
+    const { workers } = req.body;
+    if (Array.isArray(workers)) {
+        WORKER_URLS = workers;
+        saveWorkers(workers);
+        res.json({ success: true });
+    } else {
+        res.status(400).json({ error: 'Invalid workers array' });
     }
 });
 

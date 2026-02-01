@@ -335,6 +335,94 @@
                 display: none;
             }
         }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            margin: 10% auto;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-content h2 {
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .modal-content label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .modal-content textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            resize: vertical;
+            min-height: 200px;
+        }
+
+        .modal-content textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+
+        .modal-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .modal-btn.save {
+            background: var(--primary);
+            color: white;
+        }
+
+        .modal-btn.save:hover {
+            background: var(--secondary);
+        }
+
+        .modal-btn.cancel {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+        }
+
+        .modal-btn.cancel:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
     </style>
 </head>
 
@@ -437,7 +525,66 @@
         </section>
     </main>
 
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <h2><i class="fas fa-cog"></i> Settings</h2>
+            <label for="worker-urls">Worker URLs (one per line):</label>
+            <textarea id="worker-urls" placeholder="http://localhost:3001&#10;http://worker2:3001&#10;..."></textarea>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeSettings()">Cancel</button>
+                <button class="modal-btn save" onclick="saveSettings()">Save</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        function openSettings() {
+            fetch('/settings')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('worker-urls').value = data.workers.join('\n');
+                    document.getElementById('settings-modal').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error loading settings:', error);
+                    alert('Failed to load settings');
+                });
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').style.display = 'none';
+        }
+
+        function saveSettings() {
+            const urls = document.getElementById('worker-urls').value
+                .split('\n')
+                .map(url => url.trim())
+                .filter(url => url.length > 0);
+
+            fetch('/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ workers: urls }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        closeSettings();
+                        fetchStatus(); // Refresh the dashboard
+                        alert('Settings saved successfully');
+                    } else {
+                        alert('Failed to save settings');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error saving settings:', error);
+                    alert('Failed to save settings');
+                });
+        }
+
         async function fetchStatus() {
             try {
                 const response = await fetch('/health');
