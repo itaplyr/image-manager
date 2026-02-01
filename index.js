@@ -194,7 +194,7 @@ app.get('/health', async (req, res) => {
     const managerRam = Math.round(process.memoryUsage().rss / 1024 / 1024); // MB
     const totalSystemRam = Math.round(os.totalmem() / 1024 / 1024); // MB
     const ramUsage = totalWorkersRam; // Total worker RAM
-    const workersUsage = totalSystemRam > 0 ? Math.round((ramUsage / totalSystemRam) * 100) : 0; // % of system RAM used by workers
+    const workersUsage = ramUsage / (healthyWorkers * 512) * 100
 
     res.json({
         status: 'healthy',
