@@ -130,7 +130,7 @@ app.get('/health', async (req, res) => {
     const managerRam = Math.round(process.memoryUsage().rss / 1024 / 1024); // MB
     const totalSystemRam = Math.round(os.totalmem() / 1024 / 1024); // MB
     const ramUsage = totalWorkersRam; // Total worker RAM
-    const workersUsage = Math.round((totalWorkersRam / totalSystemRam) * 100); // % of system RAM used by workers
+    const workersUsage = Math.round((ramUsage / (healthyWorkers * 512)) * 100); // % of system RAM used by workers
 
     res.json({
         status: 'healthy',
@@ -139,6 +139,8 @@ app.get('/health', async (req, res) => {
         healthyWorkers,
         processing: processingQueue.size,
         cachedImages: fs.readdirSync(IMAGE_DIR).length,
+        managerRam,
+        totalSystemRam,
         ramUsage,
         workersUsage
     });
