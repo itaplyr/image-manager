@@ -16,7 +16,7 @@ app.use(express.json());
 const WORKER_URLS = (process.env.WORKER_URLS || 'http://localhost:3001').split(',');
 const POLL_INTERVAL = 60 * 1000;
 const IMAGE_DIR = path.join(process.cwd(), 'images');
-const CACHE_DURATION = 24 * 60 * 60 * 1000;
+const CACHE_DURATION = 10 * 60 * 1000;
 
 if (!fs.existsSync(IMAGE_DIR)) {
     fs.mkdirSync(IMAGE_DIR, { recursive: true });
