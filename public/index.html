@@ -409,10 +409,17 @@
                 </div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon process"><i class="fas fa-cogs"></i></div>
+                <div class="stat-icon cpu"><i class="fas fa-memory"></i></div>
                 <div class="stat-info">
-                    <h3>Manager Role</h3>
-                    <p id="manager-role">Manager</p>
+                    <h3>Total Worker RAM</h3>
+                    <p id="ram-usage">0 MB</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon process"><i class="fas fa-percentage"></i></div>
+                <div class="stat-info">
+                    <h3>System RAM %</h3>
+                    <p id="workers-usage">0%</p>
                 </div>
             </div>
         </section>
@@ -441,7 +448,8 @@
                 document.getElementById('healthy-workers').textContent = data.healthyWorkers || 0;
                 document.getElementById('processing-queue').textContent = data.processing || 0;
                 document.getElementById('cached-images').textContent = data.cachedImages || 0;
-                document.getElementById('manager-role').textContent = data.manager ? 'Manager' : 'Worker';
+                document.getElementById('ram-usage').textContent = (data.ramUsage || 0) + ' MB';
+                document.getElementById('workers-usage').textContent = (data.workersUsage || 0) + '%';
 
                 document.getElementById('last-updated').textContent = new Date().toLocaleString();
             } catch (error) {

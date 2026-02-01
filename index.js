@@ -6,6 +6,7 @@ import cors from 'cors';
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -110,17 +111,26 @@ async function processTradeAd(adId, tradeData) {
 
 app.get('/health', async (req, res) => {
     let healthyWorkers = 0;
+    let totalWorkersRam = 0;
 
     await Promise.all(
         WORKER_URLS.map(async (workerUrl) => {
             try {
-                await axios.get(`${workerUrl}/health`);
+                const response = await axios.get(`${workerUrl}/health`);
                 healthyWorkers += 1;
+                if (response.data.ramUsage) {
+                    totalWorkersRam += response.data.ramUsage;
+                }
             } catch (err) {
                 console.error(`[Manager] Worker ${workerUrl} is unhealthy`);
             }
         })
     );
+
+    const managerRam = Math.round(process.memoryUsage().rss / 1024 / 1024); // MB
+    const totalSystemRam = Math.round(os.totalmem() / 1024 / 1024); // MB
+    const ramUsage = totalWorkersRam; // Total worker RAM
+    const workersUsage = Math.round((totalWorkersRam / totalSystemRam) * 100); // % of system RAM used by workers
 
     res.json({
         status: 'healthy',
@@ -128,7 +138,9 @@ app.get('/health', async (req, res) => {
         workers: WORKER_URLS.length,
         healthyWorkers,
         processing: processingQueue.size,
-        cachedImages: fs.readdirSync(IMAGE_DIR).length
+        cachedImages: fs.readdirSync(IMAGE_DIR).length,
+        ramUsage,
+        workersUsage
     });
 });
 
