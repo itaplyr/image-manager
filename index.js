@@ -107,31 +107,71 @@ async function pollTradeAds() {
     }
 }
 
-async function processTradeAd(adId, tradeData) {
+async function processTradeAd(adId, tradeData, attempts = 0, triedWorkers = new Set()) {
+    const MAX_ATTEMPTS = WORKER_URLS.length;
+
+    if (attempts >= MAX_ATTEMPTS) {
+        console.error(`[Manager] All workers overloaded or failed for trade ad ${adId}`);
+        processingQueue.delete(adId);
+        return;
+    }
+
+    const workerUrl = getNextWorker();
+
+    // Prevent retrying the same worker
+    if (triedWorkers.has(workerUrl)) {
+        return processTradeAd(adId, tradeData, attempts + 1, triedWorkers);
+    }
+
+    triedWorkers.add(workerUrl);
+
     try {
-        console.log(`[Manager] Processing trade ad ${adId}`);
+        console.log(`[Manager] Processing trade ad ${adId} on ${workerUrl}`);
 
-        const workerUrl = getNextWorker();
-        console.log(`[Manager] Sending to worker: ${workerUrl}`);
+        const response = await axios.post(
+            `${workerUrl}/generate`,
+            { tradeData },
+            {
+                responseType: 'arraybuffer',
+                timeout: 60000,
+                validateStatus: () => true // allow 367 to be handled manually
+            }
+        );
 
-        const response = await axios.post(`${workerUrl}/generate`, {
-            tradeData: tradeData
-        }, {
-            responseType: 'arraybuffer',
-            timeout: 60000
-        });
+        // Worker says "I'm overloaded"
+        if (response.status === 367) {
+            console.warn(`[Manager] ${workerUrl} overloaded (>400MB RAM), trying next worker`);
+            return processTradeAd(adId, tradeData, attempts + 1, triedWorkers);
+        }
 
+        // Any non-success status other than 367
+        if (response.status !== 200) {
+            console.error(
+                `[Manager] Worker ${workerUrl} failed with status ${response.status}`
+            );
+            return processTradeAd(adId, tradeData, attempts + 1, triedWorkers);
+        }
+
+        // Success
         const imagePath = path.join(IMAGE_DIR, `${adId}.png`);
         fs.writeFileSync(imagePath, Buffer.from(response.data));
 
         console.log(`[Manager] Successfully saved image for trade ad ${adId}`);
 
     } catch (error) {
-        console.error(`[Manager] Failed to process trade ad ${adId}:`, error.message);
+        console.error(
+            `[Manager] Error processing trade ad ${adId} on ${workerUrl}:`,
+            error.message
+        );
+        return processTradeAd(adId, tradeData, attempts + 1, triedWorkers);
     } finally {
-        processingQueue.delete(adId);
+        // Only remove if we're done (success OR all attempts exhausted)
+        if (attempts + 1 >= MAX_ATTEMPTS) {
+            processingQueue.delete(adId);
+        }
     }
 }
+
 
 app.get('/health', async (req, res) => {
     let healthyWorkers = 0;
